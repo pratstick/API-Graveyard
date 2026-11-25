@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API Graveyard</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M10 44 V20 a14 14 0 0 1 28 0 V44 Z' fill='%23424a5a' stroke='%2359627a'/%3E%3Cpath d='M22 14 h4 v4 h4 v4 h-4 v10 h-4 v-10 h-4 v-4 h4 z' fill='%23232734'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+  <div class="moon" aria-hidden="true"></div>
+  <div class="fog f1" aria-hidden="true"></div>
+  <div class="fog f2" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <header class="site-header">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M10 44 V20 a14 14 0 0 1 28 0 V44 Z" fill="#424a5a" stroke="#59627a" stroke-width="1.5"/>
+          <path d="M22 14 h4 v4 h4 v4 h-4 v10 h-4 v-10 h-4 v-4 h4 z" fill="#232734"/>
+          <rect x="5" y="42" width="38" height="4" rx="2" fill="#1a1e27"/>
+        </svg>
+        <div>
+          <h1>API Graveyard</h1>
+          <p class="tagline">Detects unused, deprecated and forgotten API endpoints — by crossing your source code with real traffic.</p>
+        </div>
+      </div>
+      <div class="health">
+        <div class="score" id="score">–</div>
+        <div class="score-label">graveyard health</div>
+        <div class="score-verdict" id="scoreVerdict"></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel intro-panel">
+        <div class="chips" id="chips"></div>
+        <div class="meta-line" id="metaLine">Excavating…</div>
+      </section>
+
+      <section class="panel zombie-panel" id="zombiePanel" hidden>
+        <div class="panel-head">
+          <h2>🧟 Zombie Alert</h2>
+          <p class="panel-sub">Deprecated routes that clients still hammer. Deleting them breaks production; migrating clients sets them free.</p>
+        </div>
+        <div class="zombie-list" id="zombieList"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>⚰️ The Burial Ground</h2>
+          <p class="panel-sub">Routes your code still serves that no one visits anymore. <span id="graveCount"></span> graves found. Click a stone for the autopsy.</p>
+        </div>
+        <div class="graves" id="graves">
+          <div class="empty">🌙 Digging…</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head row">
+          <div>
+            <h2>📇 Full Inventory</h2>
+            <p class="panel-sub"><span id="invCount"></span> routes shown · click a row for the autopsy</p>
+          </div>
+          <div class="tools">
+            <input id="searchInput" type="search" placeholder="filter by path or file…" spellcheck="false">
+            <select id="filterMethod" aria-label="filter by method">
+              <option value="all">All methods</option>
+              <option>GET</option><option>POST</option><option>PUT</option>
+              <option>PATCH</option><option>DELETE</option>
+            </select>
+            <select id="sortSelect" aria-label="sort">
+              <option value="hits30">Sort: 30-day hits</option>
+              <option value="hits">Sort: total hits</option>
+              <option value="last">Sort: last seen</option>
+              <option value="path">Sort: path</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="inv">
+            <thead>
+              <tr>
+                <th>Status</th><th>Method</th><th>Path</th>
+                <th class="num">30d</th><th class="num">All</th>
+                <th>Last seen</th><th>Trend 30d</th><th>Source</th>
+              </tr>
+            </thead>
+            <tbody id="invBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="ghostPanel">
+        <div class="panel-head">
+          <h2>👻 Ghost Traffic</h2>
+          <p class="panel-sub">Requests that arrived for routes that <em>don't exist</em> — deleted, renamed, or never deployed. <span id="ghostCount"></span> such requests in the window.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="ghosts">
+            <thead><tr><th>Path</th><th class="num">Requests</th><th>Last seen</th></tr></thead>
+            <tbody id="ghostBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel import-panel">
+        <div class="panel-head">
+          <h2>📥 Import your own access logs</h2>
+          <p class="panel-sub">NGINX/Apache combined format or JSON lines, auto-detected line by line. Imported logs are <b>merged</b> with the seeded demo traffic so the demo routes still light up.</p>
+        </div>
+        <div class="import-grid">
+          <div>
+            <label class="file-btn">📄 Choose a log file<input type="file" id="fileInput" accept=".log,.txt,.json,.jsonl,.out,.access" hidden></label>
+            <span class="dim" id="fileName"></span>
+          </div>
+          <textarea id="logText" placeholder='…or paste lines here:
+203.0.113.9 - - [24/Nov/2026:09:00:00 +0000] "GET /api/v1/products HTTP/1.1" 200 512 "-" "curl/8"
+{"method":"POST","path":"/api/v1/orders","ts":"2026-11-24T09:03:11Z"}'></textarea>
+          <div class="import-actions">
+            <button class="btn primary" id="importBtn">Import &amp; re-scan</button>
+            <button class="btn" id="resetBtn">Reset to demo traffic</button>
+            <span class="dim" id="importStatus"></span>
+          </div>
+          <p class="dim cli-tip">Running a real audit on your own code? Use the CLI, which scans <b>your</b> project against <b>your</b> logs:<br><code>node cli.js --project ./src --logs access.log --json</code></p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      ⚰ API Graveyard — routes die when nobody visits. Scan them before they haunt production.
+    </footer>
+  </div>
+
+  <div class="modal" id="modal" hidden><div class="modal-card" id="modalBody"></div></div>
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
